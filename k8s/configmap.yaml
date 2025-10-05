@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qdrant-config
+  namespace: qdrant-system
+  labels:
+    app: qdrant
+data:
+  config.yaml: |
+    log_level: INFO
+    
+    storage:
+      # Path to the storage directory
+      storage_path: /qdrant/storage
+      
+      # Write-ahead-log (WAL) configuration
+      wal:
+        wal_capacity_mb: 32
+        wal_segments_ahead: 0
+      
+      # Performance tuning
+      performance:
+        max_search_threads: 0
+        max_optimization_threads: 1
+      
+      # RocksDB configuration
+      rocksdb:
+        max_background_jobs: 2
+        max_sub_compactions: 1
+        max_open_files: 100
+    
+    service:
+      # Host and port for the HTTP API
+      host: 0.0.0.0
+      port: 6333
+      
+      # Host and port for the gRPC API
+      grpc_port: 6334
+      
+      # Enable CORS
+      enable_cors: true
+      
+      # Max request size in bytes (64MB)
+      max_request_size_mb: 64
+      
+      # API key for authentication (will be set via secret)
+      api_key: ${QDRANT_API_KEY}
+      
+      # Read-only API key for limited access
+      read_only_api_key: ${QDRANT_READ_ONLY_API_KEY}
+      
+      # Enable JWT RBAC for granular access control
+      jwt_rbac: true
+      
+      # Enable TLS (should be enabled in production)
+      enable_tls: false
+    
+    cluster:
+      # Disable cluster mode for single-node deployment
+      enabled: false
+    
+    telemetry:
+      # Disable anonymous telemetry
+      disabled: true

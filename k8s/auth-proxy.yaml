@@ -1,0 +1,155 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qdrant-auth-proxy
+  namespace: qdrant-system
+  labels:
+    app: qdrant-auth-proxy
+    component: authentication
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: qdrant-auth-proxy
+  template:
+    metadata:
+      labels:
+        app: qdrant-auth-proxy
+        component: authentication
+    spec:
+      serviceAccountName: qdrant-auth-proxy
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+      containers:
+      - name: auth-proxy
+        image: python:3.11-slim
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: QDRANT_HOST
+          value: "qdrant-internal.qdrant-system.svc.cluster.local"
+        - name: QDRANT_PORT
+          value: "6333"
+        - name: PROXY_HOST
+          value: "0.0.0.0"
+        - name: PROXY_PORT
+          value: "8000"
+        - name: LOG_LEVEL
+          value: "INFO"
+        workingDir: /app
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          pip install --no-cache-dir -r requirements.txt
+          python auth_proxy.py --host $PROXY_HOST --port $PROXY_PORT --qdrant-host $QDRANT_HOST --qdrant-port $QDRANT_PORT
+        volumeMounts:
+        - name: app-code
+          mountPath: /app
+          readOnly: true
+        - name: auth-data
+          mountPath: /app/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 10
+      volumes:
+      - name: app-code
+        configMap:
+          name: qdrant-auth-proxy-code
+      - name: auth-data
+        persistentVolumeClaim:
+          claimName: qdrant-auth-data
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: qdrant-auth-proxy
+  namespace: qdrant-system
+  labels:
+    app: qdrant-auth-proxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant-auth-proxy
+  namespace: qdrant-system
+  labels:
+    app: qdrant-auth-proxy
+    service-type: loadbalancer
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 6333
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: qdrant-auth-proxy
+  sessionAffinity: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant-auth-proxy-internal
+  namespace: qdrant-system
+  labels:
+    app: qdrant-auth-proxy
+    service-type: clusterip
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: qdrant-auth-proxy
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qdrant-auth-data
+  namespace: qdrant-system
+  labels:
+    app: qdrant-auth-proxy
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 1Gi

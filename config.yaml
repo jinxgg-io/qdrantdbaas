@@ -1,0 +1,49 @@
+cloud_provider: "aws"  # Options: aws (gcp, azure coming soon)
+
+aws:
+  region: "us-west-2"
+  profile: "default"  # AWS CLI profile to use
+  
+  eks:
+    cluster_name: "qdrant-dbaas"
+    version: "1.34"
+    node_groups:
+      - name: "qdrant-nodes"
+        instance_types: ["t3.small", "t3.medium"]
+        ami_type: "BOTTLEROCKET_x86_64"
+        capacity_type: "ON_DEMAND"
+        desired_size: 2
+        min_size: 1
+        max_size: 4
+        disk_size: 50
+        subnets: []  # Will be auto-detected or created
+
+qdrant:
+  namespace: "qdrant-system"
+  replicas: 1  # Start with single node for simplicity
+  image: "qdrant/qdrant:v1.8.1"
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  storage:
+    size: "10Gi"
+    # Storage class will be mapped based on cloud provider
+    # AWS: gp3, GCP: pd-ssd, Azure: managed-premium
+  service:
+    type: "LoadBalancer"
+    port: 6333
+    grpc_port: 6334
+
+vpc:
+  cidr: "10.0.0.0/16"
+  public_subnets:
+    - "10.0.1.0/24"
+    - "10.0.2.0/24"
+  private_subnets:
+    - "10.0.10.0/24"
+    - "10.0.20.0/24"
+    

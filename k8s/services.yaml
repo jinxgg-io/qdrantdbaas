@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant-headless
+  namespace: qdrant-system
+  labels:
+    app: qdrant
+    service-type: headless
+spec:
+  clusterIP: None
+  ports:
+  - port: 6333
+    targetPort: 6333
+    protocol: TCP
+    name: http
+  - port: 6334
+    targetPort: 6334
+    protocol: TCP
+    name: grpc
+  - port: 6335
+    targetPort: 6335
+    protocol: TCP
+    name: p2p
+  selector:
+    app: qdrant
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant
+  namespace: qdrant-system
+  labels:
+    app: qdrant
+    service-type: loadbalancer
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 6333
+    targetPort: 6333
+    protocol: TCP
+    name: http
+  - port: 6334
+    targetPort: 6334
+    protocol: TCP
+    name: grpc
+  selector:
+    app: qdrant
+  sessionAffinity: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant-internal
+  namespace: qdrant-system
+  labels:
+    app: qdrant
+    service-type: clusterip
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6333
+    targetPort: 6333
+    protocol: TCP
+    name: http
+  - port: 6334
+    targetPort: 6334
+    protocol: TCP
+    name: grpc
+  selector:
+    app: qdrant

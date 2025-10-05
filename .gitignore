@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+ENV/
+env.bak/
+venv.bak/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# AWS credentials (never commit these!)
+.aws/
+aws-credentials.json
+*.pem
+*.key
+
+# Kubernetes config files
+kubeconfig
+kubeconfig.*
+*.kubeconfig
+
+# Test coverage
+.coverage
+.pytest_cache/
+
+# Scripts directory
+scripts/
+
+# Local development
+local/
+dev/
+debug.log
+
+# Sensitive data
+qdrant_auth_config.json

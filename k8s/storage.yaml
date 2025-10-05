@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qdrant-data-pvc
+  namespace: qdrant-system
+  labels:
+    app: qdrant
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: qdrant-storage
+  resources:
+    requests:
+      storage: 10Gi

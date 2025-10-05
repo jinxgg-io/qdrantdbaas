@@ -1,0 +1,16 @@
+python-kubernetes
+boto3==1.34.162
+kubernetes==29.0.0
+PyYAML==6.0.1
+requests==2.31.0
+click==8.1.7
+jinja2==3.1.4
+python-dotenv==1.0.1
+botocore==1.34.162
+PyJWT==2.8.0
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+httpx==0.25.2
+cryptography==41.0.8
+qdrant-client==1.7.0
+pydantic==2.5.0

@@ -1,0 +1,147 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: qdrant
+  namespace: qdrant-system
+  labels:
+    app: qdrant
+    version: v1.8.1
+spec:
+  serviceName: qdrant-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qdrant
+  template:
+    metadata:
+      labels:
+        app: qdrant
+        version: v1.8.1
+    spec:
+      serviceAccountName: qdrant
+      containers:
+      - name: qdrant
+        image: qdrant/qdrant:v1.8.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 6333
+          name: http
+          protocol: TCP
+        - containerPort: 6334
+          name: grpc
+          protocol: TCP
+        env:
+        - name: QDRANT__SERVICE__HTTP_PORT
+          value: "6333"
+        - name: QDRANT__SERVICE__GRPC_PORT
+          value: "6334"
+        - name: QDRANT__CLUSTER__ENABLED
+          value: "false"
+        - name: QDRANT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: qdrant-api-keys
+              key: api_key
+        - name: QDRANT_READ_ONLY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: qdrant-api-keys
+              key: read_only_api_key
+        - name: QDRANT__SERVICE__API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: qdrant-api-keys
+              key: api_key
+        - name: QDRANT__SERVICE__READ_ONLY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: qdrant-api-keys
+              key: read_only_api_key
+        - name: QDRANT__SERVICE__JWT_RBAC
+          value: "true"
+        volumeMounts:
+        - name: qdrant-storage
+          mountPath: /qdrant/storage
+        - name: qdrant-config
+          mountPath: /qdrant/config
+          readOnly: true
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 6333
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 6333
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /
+            port: 6333
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+      volumes:
+      - name: qdrant-config
+        configMap:
+          name: qdrant-config
+  volumeClaimTemplates:
+  - metadata:
+      name: qdrant-storage
+      labels:
+        app: qdrant
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: qdrant-storage
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: qdrant
+  namespace: qdrant-system
+  labels:
+    app: qdrant
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: qdrant
+  labels:
+    app: qdrant
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: qdrant
+  labels:
+    app: qdrant
+subjects:
+- kind: ServiceAccount
+  name: qdrant
+  namespace: qdrant-system
+roleRef:
+  kind: ClusterRole
+  name: qdrant
+  apiGroup: rbac.authorization.k8s.io
